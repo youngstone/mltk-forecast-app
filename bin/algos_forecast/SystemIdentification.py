@@ -153,16 +153,9 @@ class SystemIdentification(BaseAlgo):
             self.feature_variables.append(self.time_field)
 
         df_now[self.time_field] = pd.to_datetime(df_now[self.time_field])
-        # df_now[self.time_field] = pd.to_datetime(df_now[self.time_field], unit='s')
+
         # check timestamp continuity
         # check missing data
-        # df_now, nans, _ = df_util.prepare_features(
-        #     X=df_now,
-        #     variables=self.feature_variables,
-        #     final_columns=None,
-        #     get_dummies=False,
-        #     mlspl_limits=options.get('mlspl_limits'),
-        # )
 
         df_all = [df_now]
         features_all = []
@@ -187,10 +180,7 @@ class SystemIdentification(BaseAlgo):
     def apply(self, df, options):
         df_new = df.copy(deep=True)
 
-        # raise Exception(df_new.columns)
-
         df_new[self.time_field] = pd.to_datetime(df_new[self.time_field])
-        # df_new[self.time_field] = pd.to_datetime(df_new[self.time_field], unit='s')
 
         df_all = []
         features_all = []
@@ -217,14 +207,14 @@ class SystemIdentification(BaseAlgo):
 
         return df_output
 
-    def summary(self):
+    def _summary(self):
         pass
 
     @staticmethod
-    def register_codecs():
+    def _register_codecs():
         from codec.codecs import SimpleObjectCodec, TreeCodec
         codecs_manager.add_codec(
-            "algos_contrib.SystemIdentification", "SystemIdentification", SimpleObjectCodec
+            "algos_forecast.SystemIdentification", "SystemIdentification", SimpleObjectCodec
         )
         codecs_manager.add_codec(
             "sklearn.multioutput", "MultiOutputRegressor", SimpleObjectCodec
