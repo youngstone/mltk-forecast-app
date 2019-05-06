@@ -7,6 +7,7 @@ from datetime import timedelta
 import pandas as pd
 import numpy as np
 
+from scipy.stats import norm
 from pandas.core.tools.datetimes import _guess_datetime_format_for_array
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.linear_model import LinearRegression
@@ -169,11 +170,22 @@ class LinearRegressionHandler(object):
 
     @staticmethod
     def generate_confidence_interval(model, X, percentile):
-        pass
+        stderr = model.y_stderr
+        y_pred = model.predict(X)
+        scale = norm.ppf(percentile / 100.)
+        upper = y_pred + scale * stderr
+        lower = y_pred - scale * stderr
+        return lower, upper
 
     @staticmethod
     def generate_summary(estimator):
-        pass
+        df = pd.DataFrame(
+            {'feature': estimator.feature_names, 'coefficient': estimator.coef_.ravel()}
+        )
+        idf = pd.DataFrame(
+            {'feature': ['_intercept'], 'coefficient': [estimator.intercept_]}
+        )
+        return pd.concat([df, idf])
 
 
 class SystemIdentification(BaseAlgo):
@@ -237,7 +249,13 @@ class SystemIdentification(BaseAlgo):
         y = df_training[self.target_variables].values
 
         self.estimator.fit(X, y)
-        self.estimator.feature_names = features_all
+        y_pred = self.estimator.predict(X)
+        y_stderr = np.sqrt(np.sum((y_pred - y)**2, axis=0) / (len(y) - 2))
+
+        # information for post-process
+        for i, estimator in enumerate(self.estimator.estimators_):
+            estimator.feature_names = features_all
+            estimator.y_stderr = y_stderr[i]
 
     def apply(self, df, options):
         df_new = df.copy(deep=True)
@@ -278,7 +296,7 @@ class SystemIdentification(BaseAlgo):
         )
         df_summary_all = []
         for target, estimator in zip(self.target_variables, self.estimator.estimators_):
-            estimator.feature_names = self.estimator.feature_names
+            # estimator.feature_names = self.estimator.feature_names
             df_summary = self.model_helper.handle_summary(estimator)
             df_summary['target'] = target
             df_summary_all.append(df_summary)
