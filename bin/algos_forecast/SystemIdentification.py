@@ -226,7 +226,7 @@ class SystemIdentification(BaseAlgo):
     def fit(self, df, options):
         df_now = df.copy(deep=True)
 
-        df_now[self.time_field] = pd.to_datetime(df_now[self.time_field])
+        df_now[self.time_field] = pd.to_datetime(df_now[self.time_field], unit='s')
 
         # check timestamp continuity
         # check missing data
